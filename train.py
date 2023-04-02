@@ -1,10 +1,16 @@
 from math import sqrt
 from os import listdir, path
+import os
+import shutil
+import joblib
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from numpy.random import Generator, PCG64
+
+model_folder = "./model"
+
 def vec_len(v):
     sum = 0
     for component in v:
@@ -95,7 +101,6 @@ W1 = rng.random((input_size, hidden_size_1))
 
 W2 = rng.random((hidden_size_1, hidden_size_2))
 
-
 W3 = rng.random((hidden_size_2, hidden_size_3))
 
 W4 = rng.random((hidden_size_3, output_size))
@@ -116,8 +121,6 @@ W4 = rng.random((hidden_size_3, output_size))
 # print("---------------------------------")
 # print(W3)
 # print("---------------------------------")
-
-
 
 # 학습률과 반복수
 learning_rate = 0.01
@@ -154,7 +157,6 @@ for i in range(num_iterations):
         print(i,"회 반복 : ",error)
         error_list.append(abs(error))
 
-
 error_10000.append(error_list)
 error_10000 = np.array(error_10000)
 error_10000 = abs(error_10000.flatten())
@@ -163,27 +165,13 @@ plt.plot(error_10000, label='error')
 plt.legend()
 plt.show()
 
+if path.exists(model_folder):
+    print("이미 존재하는 네트워크를 삭제합니다.")
+    shutil.rmtree(model_folder)
+os.makedirs(model_folder, exist_ok=True)
 
-#테스트 데이터 로드
-test_datum, file_names = load_datasets_in_folder("./test_data")
+print(f"학습된 네트워크를 다음 위치에 저장합니다: {model_folder}")
 
-for test_data, file_name in zip(test_datum, file_names):
-    print("---------------------------")
-    print(f'테스트 데이터셋 이름: {file_name}')
-    test_data = scaler.transform(np.reshape(test_data, (1, 10)))
-    test_data = np.array([test_data])
-    print(f'데이터: {test_data}')
-    z1 = np.dot(test_data, W1)
-    a1 = 1 / (1 + np.exp(-z1))
-    z2 = np.dot(a1, W2)
-    a2 = 1 / (1 + np.exp(-z2))
-    z3 = np.dot(a2, W3)
-    a3 = 1 / (1 + np.exp(-z3))
-    z4 = np.dot(a3, W4)
+joblib.dump(scaler, path.join(model_folder, "scaler.joblib"))
 
-    y_hat_test = 1 / (1 + np.exp(-z4))
-    print(f'결과: {y_hat_test}')
-    if y_hat_test > 0.8:
-        print("뛰었습니다")
-    else:
-        print("걸었습니다")
+np.savez(path.join(model_folder, 'model.npz'), *[W1, W2, W3, W4])

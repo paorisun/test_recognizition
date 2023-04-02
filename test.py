@@ -1,10 +1,14 @@
 from math import sqrt
 from os import listdir, path
+import joblib
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from numpy.random import Generator, PCG64
+
+model_folder = "./model"
+
 def vec_len(v):
     sum = 0
     for component in v:
@@ -64,105 +68,12 @@ def load_training_data():
     Y = np.reshape(Y, (len(Y), 1))
     return (X, Y)
 
-# 입력할 데이터
-# X = np.array([[1.029815, 1.51113, 1.890595, 2.36834, 2.395795, 2.003316583, 2.18814, 1.843235, 1.59085, 1.21185],
-#               [0.029815, 0.51113, 0.890595, 0.36834, 0.395795, 0.003316583, 0.18814, 0.843235, 0.59085, 0.21185]])
-# Y = np.array([[0], [1]])
+#StandardScaler 로드
+scaler = joblib.load(path.join(model_folder, "scaler.joblib"))
 
-#StandardScaler 설정
-scaler = StandardScaler()
-
-#csv로부터 데이터 로드
-X, Y = load_training_data()
-
-#전처리
-scaler = scaler.fit(X)
-X = scaler.transform(X)
-# X = np.round(X,2)
-
-print(X)
-print(Y)
-
-input_size = 10
-hidden_size_1 = 20
-hidden_size_2 = 20
-hidden_size_3 = 20
-
-output_size = 1
-rng = Generator(PCG64(seed=425028234))
 # 가중치 랜덤 1, 2, 3
-W1 = rng.random((input_size, hidden_size_1))
-
-W2 = rng.random((hidden_size_1, hidden_size_2))
-
-
-W3 = rng.random((hidden_size_2, hidden_size_3))
-
-W4 = rng.random((hidden_size_3, output_size))
-
-# W1 = np.array([[0.1,0.2],
-#                [0.3,0.4]])
-
-# W2 = np.array([[0.5,0.6],
-#                [0.7,0.8]])
-
-# W3 = np.array([[0.9],
-#                [0.95]])
-
-# print("---------------------------------")
-# print(W1)
-# print("---------------------------------")
-# print(W2)
-# print("---------------------------------")
-# print(W3)
-# print("---------------------------------")
-
-
-
-# 학습률과 반복수
-learning_rate = 0.01
-num_iterations = 500000
-error_list = []
-error_10000 = []
-# error_list = []
-# 학습시작
-for i in range(num_iterations):
-    # 순전파
-    z1 = np.dot(X, W1)
-    # print(z1)
-    a1 = 1 / (1 + np.exp(-z1))
-    z2 = np.dot(a1, W2)
-    a2 = 1 / (1 + np.exp(-z2))
-    z3 = np.dot(a2, W3)
-    a3 = 1 / (1 + np.exp(-z3))
-    z4 = np.dot(a3, W4)
-    y_hat = 1 / (1 + np.exp(-z4))
-
-    #역전파
-    error = Y - y_hat
-    
-    delta_output = error * y_hat * (1 - y_hat)
-    delta_hidden_3 = delta_output.dot(W4.T) * a3 * (1 - a3)
-    delta_hidden_2 = delta_hidden_3.dot(W3.T) * a2 * (1 - a2)
-    delta_hidden_1 = delta_hidden_2.dot(W2.T) * a1 * (1 - a1)
-    W4 += learning_rate * a3.T.dot(delta_output)
-    W3 += learning_rate * a2.T.dot(delta_hidden_3)
-    W2 += learning_rate * a1.T.dot(delta_hidden_2)
-    W1 += learning_rate * X.T.dot(delta_hidden_1)
-
-    if i % 10000 == 0:
-        print(i,"회 반복 : ",error)
-        error_list.append(abs(error))
-
-
-error_10000.append(error_list)
-error_10000 = np.array(error_10000)
-error_10000 = abs(error_10000.flatten())
-plt.yticks(np.arange(0, 1.1, 0.25))
-plt.plot(error_10000, label='error')
-plt.legend()
-plt.show()
-
+container = np.load(path.join(model_folder, 'model.npz'), 'rb')
+W1, W2, W3, W4 = [container[key] for key in container]
 
 #테스트 데이터 로드
 test_datum, file_names = load_datasets_in_folder("./test_data")
